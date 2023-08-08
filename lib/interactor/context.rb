@@ -28,7 +28,7 @@ module Interactor
   #   # => "baz"
   #   context
   #   # => #<Interactor::Context foo="baz" hello="world">
-  class Context < OpenStruct
+  class Context
     # Internal: Initialize an Interactor::Context or preserve an existing one.
     # If the argument given is an Interactor::Context, the argument is returned.
     # Otherwise, a new Interactor::Context is initialized from the provided
@@ -54,6 +54,11 @@ module Interactor
     # Returns the Interactor::Context.
     def self.build(context = {})
       self === context ? context : new(context)
+    end
+
+    def initialize(properties = {})
+      @table = properties || {}
+      self
     end
 
     # Public: Whether the Interactor::Context is successful. By default, a new
@@ -121,7 +126,7 @@ module Interactor
     #
     # Raises Interactor::Failure initialized with the Interactor::Context.
     def fail!(context = {})
-      context.each { |key, value| self[key.to_sym] = value }
+      context.each { |key, value| @table[key.to_sym] = value }
       @failure = true
       raise Failure, self
     end
@@ -176,6 +181,26 @@ module Interactor
     # Returns an Array of Interactor instances or an empty Array.
     def _called
       @called ||= []
+    end
+
+    def [](arg)
+      send(arg)
+    end
+
+    def []=(arg, val)
+      @table[arg.to_sym] = val
+    end
+
+    def method_missing(method_name, *args, &block)
+      if method_name.end_with?("=")
+        @table[method_name[...-1].to_sym] = args.first
+      else
+        @table[method_name.to_sym]
+      end
+    end
+
+    def respond_to_missing?(method_name, *args)
+      method_name.end_with?("=") || method_name.match?(/\w\z/)
     end
   end
 end
