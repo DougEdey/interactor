@@ -202,5 +202,9 @@ module Interactor
     def respond_to_missing?(method_name, *args)
       method_name.end_with?("=") || method_name.match?(/\w\z/)
     end
+
+    def to_h
+      @table
+    end
   end
 end
